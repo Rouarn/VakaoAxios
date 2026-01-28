@@ -8,7 +8,8 @@ import type {
   FlatRequestInstance,
   RequestOptions,
   FlatRequestInstanceConfig,
-  FlatInternalRequestConfig
+  FlatInternalRequestConfig,
+  BackendFailError
 } from './types';
 import { CancelHandler } from './CancelHandler';
 
@@ -17,7 +18,7 @@ import { CancelHandler } from './CancelHandler';
  * @param axiosConfig Axios 基础配置
  * @param options 自定义业务逻辑选项
  */
-export function createVakaoAxios<ResponseData = any>(
+export function createVakaoAxios<ResponseData = unknown>(
   axiosConfig: FlatRequestInstanceConfig<ResponseData>,
   options: RequestOptions<ResponseData>
 ): FlatRequestInstance {
@@ -59,14 +60,14 @@ export function createVakaoAxios<ResponseData = any>(
       // 1. 判断业务逻辑是否成功
       if (options.isBackendSuccess(response)) {
         // 2. 成功，进行数据转换
-        return options.transformBackendResponse(response);
+        return options.transformBackendResponse(response) as unknown as AxiosResponse<ResponseData>;
       } else {
         // 3. 业务逻辑失败
         await options.onBackendFail(response, instance);
         
-        const error = new Error('Backend Request Failed');
-        (error as any).response = response;
-        (error as any).isBackendFail = true;
+        const error = new Error('后端请求失败') as BackendFailError;
+        error.response = response;
+        error.isBackendFail = true;
         
         // 调用 onError (可选，取决于是否希望业务失败也触发 onError)
         await options.onError(error);
@@ -93,27 +94,27 @@ export function createVakaoAxios<ResponseData = any>(
   );
 
   // 封装常用方法
-  const requestMethod = async <T = any>(config: AxiosRequestConfig): Promise<T> => {
-    return instance.request<any, T>(config);
+  const requestMethod = async <T = unknown>(config: AxiosRequestConfig): Promise<T> => {
+    return instance.request<unknown, T>(config);
   };
 
-  const get = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+  const get = <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     return requestMethod<T>({ ...config, url, method: 'GET' });
   };
 
-  const post = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+  const post = <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
     return requestMethod<T>({ ...config, url, data, method: 'POST' });
   };
 
-  const put = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+  const put = <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
     return requestMethod<T>({ ...config, url, data, method: 'PUT' });
   };
 
-  const del = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+  const del = <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     return requestMethod<T>({ ...config, url, method: 'DELETE' });
   };
 
-  const patch = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+  const patch = <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
     return requestMethod<T>({ ...config, url, data, method: 'PATCH' });
   };
 

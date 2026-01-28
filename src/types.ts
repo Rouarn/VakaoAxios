@@ -10,7 +10,7 @@ import type {
  * 业务响应数据的通用结构
  * T 为实际的数据类型
  */
-export interface IResponse<T = any> {
+export interface IResponse<T = unknown> {
   code: number | string;
   data: T;
   msg: string;
@@ -20,7 +20,7 @@ export interface IResponse<T = any> {
 /**
  * 自定义请求选项
  */
-export interface RequestOptions<ResponseData = any> {
+export interface RequestOptions<ResponseData = unknown> {
   /**
    * 判断后端业务逻辑是否成功
    * @example
@@ -42,7 +42,7 @@ export interface RequestOptions<ResponseData = any> {
    * @example
    * transformBackendResponse: (response) => response.data.data
    */
-  transformBackendResponse: (response: AxiosResponse<ResponseData>) => any | Promise<any>;
+  transformBackendResponse: (response: AxiosResponse<ResponseData>) => unknown | Promise<unknown>;
   
   /**
    * 当发生错误（网络错误、超时、业务失败等）时的回调
@@ -58,7 +58,7 @@ export interface RequestOptions<ResponseData = any> {
 /**
  * 扩展的 Axios 请求配置
  */
-export interface FlatRequestInstanceConfig<ResponseData = any> extends AxiosRequestConfig {
+export interface FlatRequestInstanceConfig<ResponseData = unknown> extends AxiosRequestConfig {
   /**
    * 用于取消请求的自定义 Key。如果未提供，将自动生成。
    */
@@ -83,18 +83,23 @@ export interface FlatInternalRequestConfig extends InternalAxiosRequestConfig {
  */
 export type RequestError = AxiosError | Error;
 
+export interface BackendFailError extends Error {
+  response: AxiosResponse;
+  isBackendFail: boolean;
+}
+
 /**
  * 请求实例接口
  */
 export interface FlatRequestInstance {
   instance: AxiosInstance;
   
-  request<T = any>(config: AxiosRequestConfig): Promise<T>;
-  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>;
-  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>;
-  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>;
-  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T>;
-  patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T>;
+  request<T = unknown>(config: AxiosRequestConfig): Promise<T>;
+  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
+  patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
   
   // 暴露原始 axios 实例以便特殊需求
   cancelAll(): void;

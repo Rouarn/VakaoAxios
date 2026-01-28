@@ -10,7 +10,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rimraf dist && rollup -c",
+    "build": "rimraf dist && rollup -c rollup.config.mjs",
     "test": "jest",
     "release": "node scripts/publish.js"
   },

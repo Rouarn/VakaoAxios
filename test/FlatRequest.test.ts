@@ -2,7 +2,7 @@ import { createVakaoAxios } from '../src';
 import type { FlatRequestInstance } from '../src';
 import MockAdapter from 'axios-mock-adapter';
 
-interface ResponseData<T = any> {
+interface ResponseData<T = unknown> {
   code: number;
   data: T;
   msg: string;
@@ -52,7 +52,7 @@ describe('FlatRequest', () => {
     const responseData = { code: 400, data: null, msg: 'error' };
     mock.onGet('/error').reply(200, responseData);
 
-    await expect(request.get('/error')).rejects.toThrow('Backend Request Failed');
+    await expect(request.get('/error')).rejects.toThrow('后端请求失败');
   });
 
   it('HTTP错误时应该触发 onError', async () => {

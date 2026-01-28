@@ -1,5 +1,9 @@
 import type { FlatInternalRequestConfig } from './types';
 
+interface FormDataWithEntries extends FormData {
+  entries(): IterableIterator<[string, string | Blob]>;
+}
+
 /**
  * 稳定序列化
  * - 按对象 key 排序，确保等价对象得到一致字符串
@@ -9,7 +13,7 @@ export function stableStringify(value: unknown): string {
   if (value === undefined) return 'undefined';
   if (value === null) return 'null';
   if (value instanceof Date) return JSON.stringify(value.toJSON());
-  if (typeof value !== 'object') return JSON.stringify(value as any);
+  if (typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) {
     return `[${value.map((v) => stableStringify(v)).join(',')}]`;
   }
@@ -22,7 +26,7 @@ export function stableStringify(value: unknown): string {
     return stableStringify(entries);
   }
   if (typeof FormData !== 'undefined' && value instanceof FormData) {
-    const rawEntries = Array.from((value as any).entries() as IterableIterator<[string, string | Blob]>);
+    const rawEntries = Array.from((value as FormDataWithEntries).entries());
     const entries = rawEntries
       .map(([k, v]) => {
         if (v instanceof Blob) {
