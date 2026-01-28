@@ -1,0 +1,53 @@
+{
+  "name": "@vakao-ui/axios",
+  "version": "0.0.1",
+  "description": "一个功能完善、灵活的 axios 二次封装库，支持浏览器和 Node.js 环境",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.esm.js",
+  "browser": "dist/index.umd.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rimraf dist && rollup -c",
+    "test": "jest",
+    "release": "node scripts/publish.js"
+  },
+  "keywords": [
+    "axios",
+    "http",
+    "promise",
+    "request",
+    "wrapper",
+    "typescript"
+  ],
+  "author": {
+    "name": "Rouarn",
+    "email": "woyuxiaji@foxmail.com",
+    "url": "https://github.com/Rouarn"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.4"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.10",
+    "@vakao-ui/scripts-utils": "0.0.1",
+    "axios-mock-adapter": "^2.1.0",
+    "jest": "^30.2.0",
+    "rimraf": "^6.1.2",
+    "rollup": "^4.57.0",
+    "ts-jest": "^29.4.6",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "axios": ">=1.0.0"
+  }
+}
