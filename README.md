@@ -1,129 +1,116 @@
-# Vakao Axios
+# @vakao-ui/axios
 
-一个强大且灵活的 Axios 封装库，适用于浏览器和 Node.js 环境，提供自动重试、请求取消和 TypeScript 支持等增强功能。
+一个功能完善、开箱即用、类型安全的 Axios 封装库，灵感来源于 `alova` 和 `soybean-admin` 的请求设计。
 
 ## 特性
 
-- ✨ **深度封装**: 统一的请求/响应拦截器机制。
-- 🔄 **自动重试**: 内置请求重试功能，可配置重试次数和延迟。
-- 🚫 **请求取消**: 自动取消重复请求（可配置）。
-- 🔌 **TypeScript**: 完整的 TypeScript 支持和类型定义。
-- 📦 **多格式支持**: 支持 CJS, ESM, 和 UMD 构建格式。
-- 🌍 **跨平台**: 在浏览器和 Node.js 环境中均可运行。
+- ✨ **开箱即用**: 内置智能拦截器，无需繁琐配置。
+- 🛡️ **类型安全**: 基于 TypeScript 构建，提供完整的类型推断，拒绝 `any`。
+- 🚀 **扁平化 API**: `createFlatRequest` 提供简洁的创建方式和调用体验。
+- 🔄 **自动重试与取消**: 内置请求重试机制和重复请求自动取消功能。
+- 🎨 **高度可定制**: 支持自定义业务成功判断、错误处理、数据转换等钩子。
 
 ## 安装
 
 ```bash
-npm install vakao-axios axios
+pnpm add @vakao-ui/axios axios
 # 或
-pnpm add vakao-axios axios
-# 或
-yarn add vakao-axios axios
+npm install @vakao-ui/axios axios
 ```
 
-## 快速开始
+## 快速上手
+
+### 1. 创建请求实例
+
+建议在项目中创建一个 `request.ts` 文件：
 
 ```typescript
-import { createVakaoAxios } from 'vakao-axios';
+import { createFlatRequest } from '@vakao-ui/axios';
+import type { AxiosResponse } from 'axios';
 
-// 创建实例
-const request = createVakaoAxios({
-  baseURL: 'https://api.example.com',
-  timeout: 10000,
-  // 全局重试配置
-  retry: 0,
-});
-
-// 发起请求
-interface User {
-  id: number;
-  name: string;
+// 定义后端统一响应结构
+interface BackendResult<T = any> {
+  code: number | string;
+  data: T;
+  message: string;
 }
 
-request.get<User>({ url: '/users/1' })
-  .then(res => {
-    console.log(res.data.name);
-  })
-  .catch(err => {
-    console.error(err);
-  });
-```
-
-## 高级用法
-
-### 请求重试
-
-为特定请求开启重试：
-
-```typescript
-request.get({
-  url: '/unstable-api',
-  retry: 3,        // 重试 3 次
-  retryDelay: 1000 // 每次重试间隔 1 秒
-});
-```
-
-### 拦截器
-
-添加自定义拦截器：
-
-```typescript
-const request = createVakaoAxios({
-  baseURL: 'https://api.example.com',
-  interceptors: {
-    requestInterceptor: (config) => {
-      // 添加 token
+export const request = createFlatRequest<BackendResult>(
+  // 1. Axios 基础配置
+  {
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+    timeout: 10 * 1000,
+    // 开启重复请求取消
+    cancelDuplicateRequest: true, 
+  },
+  // 2. 业务逻辑钩子
+  {
+    // 判断请求是否成功
+    isBackendSuccess: (response) => {
+      return response.data.code === 200;
+    },
+    // 成功时转换数据（直接返回 data 字段）
+    transformBackendResponse: (response) => {
+      return response.data.data;
+    },
+    // 业务失败处理（如 token 过期、权限不足）
+    onBackendFail: async (response, instance) => {
+      const { code, message } = response.data;
+      // 处理 token 过期
+      if (code === 401) {
+        // 执行登出或刷新 token 逻辑
+      }
+      console.error(message);
+    },
+    // 全局错误处理（网络错误等）
+    onError: (error) => {
+      console.error('请求失败:', error);
+    },
+    // 请求拦截器
+    onRequest: async (config) => {
       const token = localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       return config;
-    },
-    responseInterceptor: (res) => {
-      // 处理响应
-      return res;
-    },
-    responseInterceptorCatch: (err) => {
-      // 全局错误处理
-      return Promise.reject(err);
     }
-  },
-});
+  }
+);
 ```
 
-### 请求取消
-
-默认情况下，`vakao-axios` 会自动取消尚未完成的重复请求（具有相同方法、URL、参数和数据的请求）。
-
-如果需要针对特定请求禁用此行为：
+### 2. 使用请求
 
 ```typescript
-request.get({
-  url: '/users',
-  cancelDuplicateRequest: false,
-});
-```
+interface User {
+  id: number;
+  name: string;
+}
 
-手动取消所有挂起的请求：
+// GET 请求
+const user = await request.get<User>('/users/1');
+console.log(user.name);
 
-```typescript
-request.cancelAll();
+// POST 请求
+await request.post('/users', { name: 'Alice' });
 ```
 
 ## API 参考
 
-### `createVakaoAxios(config: VakaoInstanceConfig)`
+### `createFlatRequest(config, options)`
 
-创建一个新的 VakaoAxios 实例。
+#### 参数
 
-### `VakaoInstanceConfig`
+- `config`: `AxiosRequestConfig` & `FlatRequestInstanceConfig`
+  - `requestKey?: string`: 自定义请求唯一标识
+  - `cancelDuplicateRequest?: boolean`: 是否开启重复请求取消 (默认 true)
+  - 其他 Axios 标准配置
 
-扩展自 `AxiosRequestConfig`，新增以下属性：
-
-- `retry`: number (默认值: 0) - 重试次数
-- `retryDelay`: number (默认值: 1000) - 重试延迟（毫秒）
-- `cancelDuplicateRequest`: boolean (默认值: true) - 是否取消重复请求
-- `interceptors`: VakaoInterceptors - 自定义拦截器
+- `options`: `RequestOptions`
+  - `isBackendSuccess(response)`: (必须) 判断业务逻辑是否成功
+  - `onBackendFail(response, instance)`: (必须) 业务逻辑失败回调
+  - `transformBackendResponse(response)`: (必须) 数据转换函数
+  - `onError(error)`: (必须) 全局错误处理
+  - `onRequest(config)`: (可选) 请求拦截器
 
 ## License
 

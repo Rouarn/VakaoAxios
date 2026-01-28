@@ -1,4 +1,4 @@
-import type { VakaoInternalRequestConfig } from './types';
+import type { FlatInternalRequestConfig } from './types';
 
 /**
  * 稳定序列化
@@ -51,7 +51,7 @@ export class CancelHandler {
    * 生成请求的唯一 Key
    * @param config 请求配置
    */
-  public getRequestKey(config: VakaoInternalRequestConfig): string {
+  public getRequestKey(config: FlatInternalRequestConfig): string {
     if (config.requestKey) return config.requestKey;
     return [config.method, config.url, stableStringify(config.params), stableStringify(config.data)].join('&');
   }
@@ -60,7 +60,7 @@ export class CancelHandler {
    * 将请求添加到挂起映射中
    * @param config 请求配置
    */
-  public addPending(config: VakaoInternalRequestConfig): void {
+  public addPending(config: FlatInternalRequestConfig): void {
     this.removePending(config);
     const url = this.getRequestKey(config);
     const controller = new AbortController();
@@ -72,7 +72,7 @@ export class CancelHandler {
    * 从挂起映射中移除请求并取消
    * @param config 请求配置
    */
-  public removePending(config: VakaoInternalRequestConfig): void {
+  public removePending(config: FlatInternalRequestConfig): void {
     const url = this.getRequestKey(config);
     if (this.pendingMap.has(url)) {
       const controller = this.pendingMap.get(url);
@@ -85,7 +85,7 @@ export class CancelHandler {
    * 从映射中清除请求但不取消（用于请求成功完成后）
    * @param config 请求配置
    */
-  public clearPending(config: VakaoInternalRequestConfig): void {
+  public clearPending(config: FlatInternalRequestConfig): void {
     const url = this.getRequestKey(config);
     if (this.pendingMap.has(url)) {
       this.pendingMap.delete(url);
