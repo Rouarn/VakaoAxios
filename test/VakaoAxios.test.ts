@@ -1,8 +1,9 @@
-import { createVakaoAxios } from '../src';
+import { createVakaoAxios, VakaoAxios } from '../src';
 import MockAdapter from 'axios-mock-adapter';
+import { AxiosResponse } from 'axios';
 
 describe('VakaoAxios', () => {
-  let vakao: any;
+  let vakao: VakaoAxios;
   let mock: MockAdapter;
 
   beforeEach(() => {
@@ -18,14 +19,14 @@ describe('VakaoAxios', () => {
     const data = { id: 1, name: 'test' };
     mock.onGet('/users/1').reply(200, data);
 
-    const response = await vakao.get({ url: '/users/1' });
+    const response = await vakao.get<AxiosResponse>({ url: '/users/1' });
     expect(response.data).toEqual(data);
   });
 
   it('失败时应该重试', async () => {
     mock.onGet('/retry').replyOnce(500).onGet('/retry').reply(200, { success: true });
     
-    const response = await vakao.get({ 
+    const response = await vakao.get<AxiosResponse>({ 
         url: '/retry', 
         retry: 1, 
         retryDelay: 100 
@@ -53,7 +54,7 @@ describe('VakaoAxios', () => {
         return [400, { ok: false }];
     });
 
-    const response = await customVakao.get({ url: '/interceptor' });
+    const response = await customVakao.get<AxiosResponse>({ url: '/interceptor' });
     expect(response.data).toEqual({ ok: true });
   });
 });

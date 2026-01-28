@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { VakaoInstanceConfig, VakaoInternalRequestConfig, VakaoInterceptors, VakaoRequestConfig } from './types';
 import { CancelHandler } from './CancelHandler';
 
@@ -26,7 +26,7 @@ export class VakaoAxios {
         }
         return config;
       },
-      (error: any) => {
+      (error: unknown) => {
         if (this.interceptors?.requestInterceptorCatch) {
             return this.interceptors.requestInterceptorCatch(error);
         }
@@ -49,8 +49,9 @@ export class VakaoAxios {
         }
         return res;
       },
-      async (error: any) => {
-        const config = error.config as VakaoInternalRequestConfig;
+      async (error: unknown) => {
+        const axiosError = error as AxiosError;
+        const config = axiosError.config as VakaoInternalRequestConfig;
         
         // 从挂起映射中移除 (错误)
         if (config && config.cancelDuplicateRequest !== false) {
@@ -76,7 +77,7 @@ export class VakaoAxios {
     );
   }
 
-  request<T = any>(config: VakaoRequestConfig): Promise<T> {
+  request<T = unknown>(config: VakaoRequestConfig): Promise<T> {
     return new Promise((resolve, reject) => {
       this.instance.request<any, T>(config)
         .then((res) => {
@@ -88,15 +89,15 @@ export class VakaoAxios {
     });
   }
 
-  get<T = any>(config: VakaoRequestConfig): Promise<T> {
+  get<T = unknown>(config: VakaoRequestConfig): Promise<T> {
     return this.request({ ...config, method: 'GET' });
   }
 
-  post<T = any>(config: VakaoRequestConfig): Promise<T> {
+  post<T = unknown>(config: VakaoRequestConfig): Promise<T> {
     return this.request({ ...config, method: 'POST' });
   }
 
-  delete<T = any>(config: VakaoRequestConfig): Promise<T> {
+  delete<T = unknown>(config: VakaoRequestConfig): Promise<T> {
     return this.request({ ...config, method: 'DELETE' });
   }
 

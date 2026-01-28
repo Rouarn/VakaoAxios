@@ -22,7 +22,7 @@ export interface VakaoRequestConfig extends AxiosRequestConfig {
   cancelDuplicateRequest?: boolean;
 }
 
-export interface VakaoResponse<T = any> {
+export interface VakaoResponse<T = unknown> {
   code: number;
   data: T;
   message: string;
@@ -39,9 +39,9 @@ export interface VakaoInternalRequestConfig extends InternalAxiosRequestConfig {
 
 export interface VakaoInterceptors {
   requestInterceptor?: (config: VakaoInternalRequestConfig) => VakaoInternalRequestConfig;
-  requestInterceptorCatch?: (error: any) => any;
+  requestInterceptorCatch?: (error: unknown) => unknown;
   responseInterceptor?: (res: AxiosResponse) => AxiosResponse;
-  responseInterceptorCatch?: (error: any) => any;
+  responseInterceptorCatch?: (error: unknown) => unknown;
 }
 
 export interface VakaoInstanceConfig extends VakaoRequestConfig {
