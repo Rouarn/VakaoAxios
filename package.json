@@ -6,9 +6,6 @@
   "module": "dist/index.esm.js",
   "browser": "dist/index.umd.js",
   "types": "dist/types/index.d.ts",
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "files": [
     "dist"
   ],
