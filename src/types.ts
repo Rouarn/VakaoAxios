@@ -40,9 +40,9 @@ export interface RequestOptions<ResponseData = unknown> {
   /**
    * 转换后端响应数据，返回最终给用户的数据
    * @example
-   * transformBackendResponse: (response) => response.data.data
+   * transform: (response) => response.data.data
    */
-  transformBackendResponse: (response: AxiosResponse<ResponseData>) => unknown | Promise<unknown>;
+  transform: (response: AxiosResponse<ResponseData>) => unknown | Promise<unknown>;
   
   /**
    * 当发生错误（网络错误、超时、业务失败等）时的回调
@@ -85,7 +85,6 @@ export type RequestError = AxiosError | Error;
 
 export interface BackendFailError extends Error {
   response: AxiosResponse;
-  isBackendFail: boolean;
 }
 
 /**

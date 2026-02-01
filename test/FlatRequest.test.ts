@@ -25,7 +25,7 @@ describe('FlatRequest', () => {
         onBackendFail: async (response) => {
           console.log('Backend failed:', response.data.msg);
         },
-        transformBackendResponse: (response) => {
+        transform: (response) => {
           return response.data.data;
         },
         onError: (error) => {
@@ -67,7 +67,7 @@ describe('FlatRequest', () => {
       {
         isBackendSuccess: (res) => res.status === 200,
         onBackendFail: () => {},
-        transformBackendResponse: (res) => res.data,
+        transform: (res) => res.data,
         onError: () => {},
         onRequest: (config) => {
           config.headers['X-Custom'] = 'foobar';

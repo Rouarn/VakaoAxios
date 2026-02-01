@@ -11,7 +11,7 @@ import type {
   FlatInternalRequestConfig,
   BackendFailError
 } from './types';
-import { CancelHandler } from './CancelHandler';
+import { CancelHandler } from './cancel-handler';
 
 /**
  * 创建扁平化请求实例
@@ -60,17 +60,16 @@ export function createVakaoAxios<ResponseData = unknown>(
       // 1. 判断业务逻辑是否成功
       if (options.isBackendSuccess(response)) {
         // 2. 成功，进行数据转换
-        return options.transformBackendResponse(response) as unknown as AxiosResponse<ResponseData>;
+        return options.transform(response) as unknown as AxiosResponse<ResponseData>;
       } else {
         // 3. 业务逻辑失败
         await options.onBackendFail(response, instance);
         
         const error = new Error('后端请求失败') as BackendFailError;
         error.response = response;
-        error.isBackendFail = true;
         
-        // 调用 onError (可选，取决于是否希望业务失败也触发 onError)
-        await options.onError(error);
+        // // 调用 onError (可选，取决于是否希望业务失败也触发 onError)
+        // await options.onError(error);
         
         return Promise.reject(error);
       }

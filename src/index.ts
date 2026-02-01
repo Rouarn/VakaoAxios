@@ -1,4 +1,4 @@
 export * from './types';
-export * from './FlatRequest';
-export * from './CancelHandler';
+export * from './flat-request';
+export * from './cancel-handler';
 

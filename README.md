@@ -50,7 +50,7 @@ export const request = createFlatRequest<BackendResult>(
       return response.data.code === 200;
     },
     // 成功时转换数据（直接返回 data 字段）
-    transformBackendResponse: (response) => {
+    transform: (response) => {
       return response.data.data;
     },
     // 业务失败处理（如 token 过期、权限不足）
@@ -108,7 +108,7 @@ await request.post('/users', { name: 'Alice' });
 - `options`: `RequestOptions`
   - `isBackendSuccess(response)`: (必须) 判断业务逻辑是否成功
   - `onBackendFail(response, instance)`: (必须) 业务逻辑失败回调
-  - `transformBackendResponse(response)`: (必须) 数据转换函数
+  - `transform(response)`: (必须) 数据转换函数
   - `onError(error)`: (必须) 全局错误处理
   - `onRequest(config)`: (可选) 请求拦截器
 
