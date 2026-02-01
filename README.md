@@ -6,7 +6,7 @@
 
 - ✨ **开箱即用**: 内置智能拦截器，无需繁琐配置。
 - 🛡️ **类型安全**: 基于 TypeScript 构建，提供完整的类型推断，拒绝 `any`。
-- 🚀 **扁平化 API**: `createFlatRequest` 提供简洁的创建方式和调用体验。
+- 🚀 **扁平化 API**: `createVakaoAxios` 提供简洁的创建方式和调用体验。
 - 🔄 **自动重试与取消**: 内置请求重试机制和重复请求自动取消功能。
 - 🎨 **高度可定制**: 支持自定义业务成功判断、错误处理、数据转换等钩子。
 
@@ -25,17 +25,17 @@ npm install @vakao-ui/axios axios
 建议在项目中创建一个 `request.ts` 文件：
 
 ```typescript
-import { createFlatRequest } from '@vakao-ui/axios';
+import { createVakaoAxios } from '@vakao-ui/axios';
 import type { AxiosResponse } from 'axios';
 
 // 定义后端统一响应结构
-interface BackendResult<T = any> {
+interface BackendResult<T = unknown> {
   code: number | string;
   data: T;
   message: string;
 }
 
-export const request = createFlatRequest<BackendResult>(
+export const request = createVakaoAxios<BackendResult>(
   // 1. Axios 基础配置
   {
     baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -96,7 +96,7 @@ await request.post('/users', { name: 'Alice' });
 
 ## API 参考
 
-### `createFlatRequest(config, options)`
+### `createVakaoAxios(config, options)`
 
 #### 参数
 

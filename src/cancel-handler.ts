@@ -26,6 +26,10 @@ export function stableStringify(value: unknown): string {
     return stableStringify(entries);
   }
   if (typeof FormData !== 'undefined' && value instanceof FormData) {
+    // 检查 entries 是否存在 (部分环境可能不完全支持)
+    if (typeof (value as unknown as { entries: unknown }).entries !== 'function') {
+        return 'FormData';
+    }
     const rawEntries = Array.from((value as FormDataWithEntries).entries());
     const entries = rawEntries
       .map(([k, v]) => {

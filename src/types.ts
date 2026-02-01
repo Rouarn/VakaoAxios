@@ -6,16 +6,6 @@ import type {
   AxiosInstance
 } from 'axios';
 
-/**
- * 业务响应数据的通用结构
- * T 为实际的数据类型
- */
-export interface IResponse<T = unknown> {
-  code: number | string;
-  data: T;
-  msg: string;
-  message?: string;
-}
 
 /**
  * 自定义请求选项
@@ -90,15 +80,15 @@ export interface BackendFailError extends Error {
 /**
  * 请求实例接口
  */
-export interface FlatRequestInstance {
+export interface FlatRequestInstance<C = AxiosRequestConfig> {
   instance: AxiosInstance;
   
-  request<T = unknown>(config: AxiosRequestConfig): Promise<T>;
-  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
-  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
-  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
-  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>;
-  patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>;
+  request<T = unknown>(config: C): Promise<T>;
+  get<T = unknown>(url: string, config?: C): Promise<T>;
+  post<T = unknown>(url: string, data?: unknown, config?: C): Promise<T>;
+  put<T = unknown>(url: string, data?: unknown, config?: C): Promise<T>;
+  delete<T = unknown>(url: string, config?: C): Promise<T>;
+  patch<T = unknown>(url: string, data?: unknown, config?: C): Promise<T>;
   
   // 暴露原始 axios 实例以便特殊需求
   cancelAll(): void;
