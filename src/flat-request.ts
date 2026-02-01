@@ -68,9 +68,6 @@ export function createVakaoAxios<ResponseData = unknown, Config = FlatRequestIns
         const error = new Error('后端请求失败') as BackendFailError;
         error.response = response;
         
-        // 调用 onError (可选，取决于是否希望业务失败也触发 onError)
-        await options.onError(error);
-        
         return Promise.reject(error);
       }
     },
