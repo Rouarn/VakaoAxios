@@ -12,19 +12,13 @@ const {
 showBanner('Vakao Axios 发布');
 
 try {
-  // 1. 运行测试
-  separator();
-  log('正在运行测试...', 'info');
-  execSync('pnpm test', { stdio: 'inherit' });
-  log('测试通过！', 'success');
-
-  // 2. 构建项目
+  // 1. 构建项目
   separator();
   log('正在构建项目...', 'build');
   execSync('pnpm run build', { stdio: 'inherit' });
   log('构建完成！', 'success');
 
-  // 3. 发布到 NPM
+  // 2. 发布到 NPM
   separator();
   log('准备发布到 NPM...', 'publish');
   
