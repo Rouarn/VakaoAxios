@@ -1,3 +1,9 @@
-export * from './types';
-export * from './flat-request';
-export * from './cancel-handler';
+export { createClient } from './client';
+export { RequestError } from './error';
+export type {
+  ClientConfig,
+  RequestClient,
+  RequestOptions,
+  ResponseContract,
+  AuthConfig,
+} from './types';

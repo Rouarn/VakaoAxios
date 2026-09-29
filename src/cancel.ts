@@ -1,4 +1,4 @@
-import type { FlatInternalRequestConfig } from './types';
+import type { AxiosRequestConfig } from 'axios';
 
 interface FormDataWithEntries extends FormData {
   entries(): IterableIterator<[string, string | Blob]>;
@@ -28,7 +28,7 @@ export function stableStringify(value: unknown): string {
   if (typeof FormData !== 'undefined' && value instanceof FormData) {
     // 检查 entries 是否存在 (部分环境可能不完全支持)
     if (typeof (value as unknown as { entries: unknown }).entries !== 'function') {
-        return 'FormData';
+      return 'FormData';
     }
     const rawEntries = Array.from((value as FormDataWithEntries).entries());
     const entries = rawEntries
@@ -48,65 +48,59 @@ export function stableStringify(value: unknown): string {
   return `{${entries.join(',')}}`;
 }
 
-export class CancelHandler {
-  private pendingMap: Map<string, AbortController>;
+type PendingConfig = AxiosRequestConfig & { requestKey?: string };
 
-  constructor() {
-    this.pendingMap = new Map();
-  }
+/**
+ * 重复请求取消处理器
+ * 基于 AbortController 维护 pending 请求，同 key 后发请求取消先前请求
+ */
+export class CancelHandler {
+  private pendingMap: Map<string, AbortController> = new Map();
 
   /**
    * 生成请求的唯一 Key
-   * @param config 请求配置
    */
-  public getRequestKey(config: FlatInternalRequestConfig): string {
+  getRequestKey(config: PendingConfig): string {
     if (config.requestKey) return config.requestKey;
     return [config.method, config.url, stableStringify(config.params), stableStringify(config.data)].join('&');
   }
 
   /**
-   * 将请求添加到挂起映射中
-   * @param config 请求配置
+   * 将请求加入挂起映射（同 key 旧请求会被取消）
    */
-  public addPending(config: FlatInternalRequestConfig): void {
+  addPending(config: PendingConfig): void {
     this.removePending(config);
-    const url = this.getRequestKey(config);
+    const key = this.getRequestKey(config);
     const controller = new AbortController();
     config.signal = controller.signal;
-    this.pendingMap.set(url, controller);
+    this.pendingMap.set(key, controller);
   }
 
   /**
-   * 从挂起映射中移除请求并取消
-   * @param config 请求配置
+   * 取消并移除挂起请求
    */
-  public removePending(config: FlatInternalRequestConfig): void {
-    const url = this.getRequestKey(config);
-    if (this.pendingMap.has(url)) {
-      const controller = this.pendingMap.get(url);
-      controller?.abort();
-      this.pendingMap.delete(url);
-    }
-  }
-
-  /**
-   * 从映射中清除请求但不取消（用于请求成功完成后）
-   * @param config 请求配置
-   */
-  public clearPending(config: FlatInternalRequestConfig): void {
-    const url = this.getRequestKey(config);
-    if (this.pendingMap.has(url)) {
-      this.pendingMap.delete(url);
-    }
-  }
-
-  /**
-   * 清除所有挂起的请求
-   */
-  public removeAllPending(): void {
-    this.pendingMap.forEach((controller) => {
+  removePending(config: PendingConfig): void {
+    const key = this.getRequestKey(config);
+    const controller = this.pendingMap.get(key);
+    if (controller) {
       controller.abort();
-    });
+      this.pendingMap.delete(key);
+    }
+  }
+
+  /**
+   * 仅移除不取消（请求正常完成后调用）
+   */
+  clearPending(config: PendingConfig): void {
+    const key = this.getRequestKey(config);
+    this.pendingMap.delete(key);
+  }
+
+  /**
+   * 取消所有挂起请求
+   */
+  removeAllPending(): void {
+    this.pendingMap.forEach((controller) => controller.abort());
     this.pendingMap.clear();
   }
 }

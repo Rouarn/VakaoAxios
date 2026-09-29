@@ -1,95 +1,120 @@
-import type {
+import type { AxiosInstance, AxiosRequestConfig } from "axios";
+import type { RequestError } from "./error";
+
+/**
+ * 单次请求选项（自定义选项 + axios 透传配置，如 headers / responseType / signal / onUploadProgress）
+ */
+export type RequestOptions = Omit<
   AxiosRequestConfig,
-  AxiosResponse,
-  AxiosError,
-  InternalAxiosRequestConfig,
-  AxiosInstance
-} from 'axios';
-
-
-/**
- * 自定义请求选项
- */
-export interface RequestOptions<ResponseData = unknown> {
-  /**
-   * 判断后端业务逻辑是否成功
-   * @example
-   * isBackendSuccess: (response) => response.data.code === 200
-   */
-  isBackendSuccess: (response: AxiosResponse<ResponseData>) => boolean;
-  
-  /**
-   * 当后端业务逻辑失败时的回调
-   * @example
-   * onBackendFail: (response) => {
-   *   if (response.data.code === 401) logout();
-   * }
-   */
-  onBackendFail: (response: AxiosResponse<ResponseData>, instance: AxiosInstance) => Promise<void> | void;
-  
-  /**
-   * 转换后端响应数据，返回最终给用户的数据
-   * @example
-   * transform: (response) => response.data.data
-   */
-  transform: (response: AxiosResponse<ResponseData>) => unknown | Promise<unknown>;
-  
-  /**
-   * 当发生错误（网络错误、超时、业务失败等）时的回调
-   */
-  onError: (error: RequestError) => void | Promise<void>;
-  
-  /**
-   * 请求拦截器 hook
-   */
-  onRequest?: (config: InternalAxiosRequestConfig) => InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>;
-}
-
-/**
- * 扩展的 Axios 请求配置
- */
-export interface FlatRequestInstanceConfig<ResponseData = unknown> extends AxiosRequestConfig {
-  /**
-   * 用于取消请求的自定义 Key。如果未提供，将自动生成。
-   */
+  "url" | "method" | "data" | "params"
+> & {
+  /** 是否计入全局 loading（默认 false） */
+  loading?: boolean;
+  /** 静默模式：不触发全局 onError（默认 false） */
+  silent?: boolean;
+  /** 重复请求取消：同 key 的后发请求取消先前请求（默认 true） */
+  dedupe?: boolean;
+  /** 401 时不触发刷新重试，登录/刷新接口自身使用（默认 false） */
+  skipAuthRetry?: boolean;
+  /** 自定义去重 key，默认按 method + url + params + data 生成 */
   requestKey?: string;
+};
+
+/** 内部请求配置（请求选项 + axios 配置） */
+export type InternalRequestConfig = AxiosRequestConfig & RequestOptions;
+
+/**
+ * 响应契约（默认值即 nestjs-template 契约，可覆盖）
+ */
+export interface ResponseContract {
+  /** 业务成功码，默认 200 */
+  successCode?: number;
+  /** 从响应信封中取业务数据，默认 (body) => body.data */
+  unwrap?: (body: unknown) => unknown;
+  /** 从错误响应体提取提示文案，默认处理 message: string | string[]（数组自动拼接） */
+  errorMessage?: (body: unknown) => string;
+}
+
+/**
+ * 认证配置
+ */
+export interface AuthConfig {
+  /** 返回完整 Authorization 头值（含 Bearer 前缀）；返回空则不注入 */
+  getToken?: () => string | null | undefined;
   /**
-   * 是否开启重复请求取消功能
-   * @default true
+   * 401 时触发（单例：并发 401 只执行一次，其余请求等待结果）。
+   * 返回 true 表示刷新成功，库自动重放原请求；返回 false / 抛错视为失败。
+   * 参数 client 为当前实例，用于发起刷新请求（配合 skipAuthRetry 防循环）。
    */
-  cancelDuplicateRequest?: boolean;
+  onRefresh?: (client: RequestClient) => Promise<boolean>;
+  /** 刷新失败回调（清 token、跳登录等） */
+  onRefreshFailed?: () => void | Promise<void>;
 }
 
 /**
- * 内部使用的请求配置，包含 requestKey 等
+ * createClient 配置项
  */
-export interface FlatInternalRequestConfig extends InternalAxiosRequestConfig {
-  requestKey?: string;
-  cancelDuplicateRequest?: boolean;
+export interface ClientConfig {
+  // ---- axios 原生透传 ----
+  baseURL?: string;
+  /** 默认 10000 */
+  timeout?: number;
+  headers?: AxiosRequestConfig["headers"];
+  withCredentials?: boolean;
+
+  /** 响应契约（默认值即 nestjs-template 契约，可覆盖） */
+  contract?: ResponseContract;
+
+  /** 认证配置 */
+  auth?: AuthConfig;
+
+  /** 全局 loading：内置计数器，pending=true 表示第一个 loading 请求开始，false 表示最后一个结束 */
+  onLoading?: (pending: boolean) => void;
+  /** 统一错误出口；silent: true 的请求不触发；cancel 类型不触发 */
+  onError?: (error: RequestError) => void;
 }
 
 /**
- * 请求错误类型
+ * 请求客户端实例
  */
-export type RequestError = AxiosError | Error;
-
-export interface BackendFailError extends Error {
-  response: AxiosResponse;
-}
-
-/**
- * 请求实例接口
- */
-export interface FlatRequestInstance<C = AxiosRequestConfig> {
-  instance: AxiosInstance;
-  
-  request<T = unknown>(config: C): Promise<T>;
-  get<T = unknown>(url: string, config?: C): Promise<T>;
-  post<T = unknown>(url: string, data?: unknown, config?: C): Promise<T>;
-  put<T = unknown>(url: string, data?: unknown, config?: C): Promise<T>;
-  delete<T = unknown>(url: string, config?: C): Promise<T>;
-  patch<T = unknown>(url: string, data?: unknown, config?: C): Promise<T>;
-  
-  // 暴露原始 axios 实例以便特殊需求
+export interface RequestClient {
+  get<T = unknown>(
+    url: string,
+    params?: object,
+    options?: RequestOptions,
+  ): Promise<T>;
+  delete<T = unknown>(
+    url: string,
+    params?: object,
+    options?: RequestOptions,
+  ): Promise<T>;
+  post<T = unknown>(
+    url: string,
+    data?: unknown,
+    options?: RequestOptions,
+  ): Promise<T>;
+  put<T = unknown>(
+    url: string,
+    data?: unknown,
+    options?: RequestOptions,
+  ): Promise<T>;
+  patch<T = unknown>(
+    url: string,
+    data?: unknown,
+    options?: RequestOptions,
+  ): Promise<T>;
+  upload<T = unknown>(
+    url: string,
+    formData: FormData,
+    options?: RequestOptions,
+  ): Promise<T>;
+  download(
+    url: string,
+    params?: object,
+    options?: RequestOptions,
+  ): Promise<Blob>;
+  /** 取消所有进行中（含未发出）的请求 */
   cancelAll(): void;
+  /** 原始 axios 实例（逃生舱） */
+  instance: AxiosInstance;
 }

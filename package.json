@@ -1,11 +1,17 @@
 {
   "name": "@vakao-ui/axios",
-  "version": "0.0.1",
-  "description": "一个功能完善、灵活的 axios 二次封装库，支持浏览器和 Node.js 环境",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "browser": "dist/index.umd.js",
+  "version": "0.0.2",
+  "description": "开箱即用的 axios 封装库：内置后端信封解包、401 单例刷新、去重取消、统一错误",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -16,10 +22,11 @@
   "keywords": [
     "axios",
     "http",
-    "promise",
     "request",
     "wrapper",
-    "typescript"
+    "typescript",
+    "authentication",
+    "refresh-token"
   ],
   "author": {
     "name": "Rouarn",
@@ -36,7 +43,6 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/node": "^25.0.10",
-    "@vakao-ui/scripts-utils": "0.0.1",
     "rimraf": "^6.1.2",
     "rollup": "^4.57.0",
     "tslib": "^2.8.1",
