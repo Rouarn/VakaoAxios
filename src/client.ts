@@ -29,72 +29,16 @@ type InternalConfig = InternalAxiosRequestConfig & {
 };
 
 const DEFAULT_TIMEOUT = 10000;
+/** 默认业务成功码；后端约定不同（0 / 1 / "00000" 等）时通过 contract.successCode 覆盖 */
 const DEFAULT_SUCCESS_CODE = 200;
 
-/** 收集字符串（支持 string 与 string[]，用于提取顶层 message） */
-function collectStrings(value: unknown, output: string[]): void {
-  if (typeof value === "string") {
-    const text = value.trim();
-    if (text) output.push(text);
-    return;
-  }
-  if (Array.isArray(value)) {
-    value.forEach(item => collectStrings(item, output));
-  }
-}
-
-interface ValidationErrorItem {
-  field?: unknown;
-  messages?: unknown;
-}
-
 /**
- * 从 data.validationErrors 提取用户可见的校验错误文案
- *
- * 结构：[{ field: string, messages: string[] }]
- * 只取 messages 内容，绝不向用户暴露 field 等内部字段名
+ * 默认契约：仅约定成功信封的判定与解包，不涉及任何错误文案
+ * { code, message, timestamp, data }（nestjs-template 统一响应信封）
  */
-function extractValidationMessages(data: unknown): string[] {
-  if (!data || typeof data !== "object") return [];
-  const list = (data as Record<string, unknown>).validationErrors;
-  if (!Array.isArray(list)) return [];
-
-  const result: string[] = [];
-  list.forEach((item: ValidationErrorItem) => {
-    if (item && typeof item === "object") collectStrings(item.messages, result);
-  });
-  return result;
-}
-
-/**
- * 默认错误文案提取
- *
- * - 顶层 message（string | string[]）作为主消息
- * - data.validationErrors 中的 messages 作为编号详情列表（不显示 field）
- * - 不递归 data 的其他内容，避免内部字段名泄露给用户
- */
-function defaultErrorMessage(body: unknown): string {
-  if (!body || typeof body !== "object") return "请求失败";
-  const record = body as Record<string, unknown>;
-
-  const mainParts: string[] = [];
-  collectStrings(record.message, mainParts);
-  const main = mainParts.join("；");
-
-  const validationMessages = extractValidationMessages(record.data);
-  if (validationMessages.length === 0) return main || "请求失败";
-
-  const detail = validationMessages
-    .map((text, index) => `${index + 1}. ${text}`)
-    .join("\n");
-  return main ? `${main}\n原因：\n${detail}` : `原因：\n${detail}`;
-}
-
-/** 默认契约：nestjs-template 统一响应信封 { code, message, timestamp, data } */
 const defaultContract: Required<ResponseContract> = {
   successCode: DEFAULT_SUCCESS_CODE,
   unwrap: body => (body as Record<string, unknown> | null)?.data,
-  errorMessage: defaultErrorMessage,
 };
 
 /**
@@ -112,10 +56,10 @@ export function createClient(config: ClientConfig = {}): RequestClient {
     ...axiosConfig
   } = config;
 
+  // 契约只管成功信封的判定与解包；报错时原始响应体随 RequestError 抛出，文案由使用方在 onError 处理
   const contract: Required<ResponseContract> = {
     successCode: userContract?.successCode ?? defaultContract.successCode,
     unwrap: userContract?.unwrap ?? defaultContract.unwrap,
-    errorMessage: userContract?.errorMessage ?? defaultContract.errorMessage,
   };
 
   const instance: AxiosInstance = axios.create({
@@ -219,11 +163,11 @@ export function createClient(config: ClientConfig = {}): RequestClient {
         return contract.unwrap(body) as AxiosResponse;
       }
 
-      // HTTP 成功但业务失败
+      // HTTP 成功但业务失败：不提取任何文案，完整响应体在 error.response.data，交由使用方解释
       const error = new RequestError({
         type: "business",
         code: typeof body?.code === "number" ? body.code : -1,
-        message: contract.errorMessage(body),
+        message: "",
         data: body?.data,
         response,
       });
@@ -234,11 +178,11 @@ export function createClient(config: ClientConfig = {}): RequestClient {
       const c = err.config as InternalConfig | undefined;
       if (c) settleRequest(c);
 
-      // 取消（手动取消 / 重复请求取消）：安静抛出，不触发 onError
+      // 取消（手动取消 / 重复请求取消）：安静抛出，不触发 onError，文案由调用方自行解释
       if (axios.isCancel(err) || err.code === "ERR_CANCELED") {
         throw new RequestError({
           type: "cancel",
-          message: "请求已取消",
+          message: err.message,
           code: 0,
         });
       }
@@ -264,12 +208,18 @@ export function createClient(config: ClientConfig = {}): RequestClient {
     },
   );
 
-  /** 归一化 axios 错误为 RequestError */
+  /**
+   * 归一化 axios 错误为 RequestError
+   *
+   * 库只归类错误并保留原始信息，不提取、不捏造任何用户可见文案：
+   * message 一律为 axios 原始信息；http 错误的完整响应体在 error.response.data，
+   * 由使用方在 onError 中按 type 与响应体自行决定提示内容。
+   */
   function normalizeError(err: AxiosError): RequestError {
     if (err.code === "ECONNABORTED" || /timeout/i.test(err.message)) {
       return new RequestError({
         type: "timeout",
-        message: "请求超时，请稍后重试",
+        message: err.message,
         code: 0,
       });
     }
@@ -277,7 +227,7 @@ export function createClient(config: ClientConfig = {}): RequestClient {
     if (!response) {
       return new RequestError({
         type: "network",
-        message: "网络连接异常，请检查网络",
+        message: err.message,
         code: 0,
       });
     }
@@ -285,7 +235,7 @@ export function createClient(config: ClientConfig = {}): RequestClient {
     return new RequestError({
       type: "http",
       code: response.status,
-      message: contract.errorMessage(body),
+      message: err.message,
       data: body?.data,
       response,
     });

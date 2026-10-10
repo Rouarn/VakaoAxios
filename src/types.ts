@@ -24,15 +24,20 @@ export type RequestOptions = Omit<
 export type InternalRequestConfig = AxiosRequestConfig & RequestOptions;
 
 /**
- * 响应契约（默认值即 nestjs-template 契约，可覆盖）
+ * 响应契约（默认适配 nestjs-template 信封，可覆盖）
+ *
+ * 仅约定成功响应的结构，不涉及任何错误文案：
+ * 接口报错时原始错误体在 RequestError.response.data 中，由使用方在 onError 自行解释
  */
 export interface ResponseContract {
-  /** 业务成功码，默认 200 */
-  successCode?: number;
+  /**
+   * 业务成功码，默认 200。
+   * 不同后端约定不同（如 0 / 1 / "00000"），按响应体中 code 的实际类型与取值设置；
+   * 判定为严格相等（===），数字 200 与字符串 "200" 不互通
+   */
+  successCode?: number | string;
   /** 从响应信封中取业务数据，默认 (body) => body.data */
   unwrap?: (body: unknown) => unknown;
-  /** 从错误响应体提取提示文案，默认处理 message: string | string[]（数组自动拼接） */
-  errorMessage?: (body: unknown) => string;
 }
 
 /**
@@ -62,7 +67,7 @@ export interface ClientConfig {
   headers?: AxiosRequestConfig["headers"];
   withCredentials?: boolean;
 
-  /** 响应契约（默认值即 nestjs-template 契约，可覆盖） */
+  /** 响应契约：仅约定成功信封的成功码与解包方式；错误文案请在 onError 中按 error.response.data 自行处理 */
   contract?: ResponseContract;
 
   /** 认证配置 */
@@ -70,7 +75,11 @@ export interface ClientConfig {
 
   /** 全局 loading：内置计数器，pending=true 表示第一个 loading 请求开始，false 表示最后一个结束 */
   onLoading?: (pending: boolean) => void;
-  /** 统一错误出口；silent: true 的请求不触发；cancel 类型不触发 */
+  /**
+   * 统一错误出口；silent: true 的请求不触发；cancel 类型不触发。
+   * 库不提供任何用户可见文案，完整错误信息挂在 error 上：
+   * type / code / data / response（原始响应体取 error.response.data），文案由使用方在此解析
+   */
   onError?: (error: RequestError) => void;
 }
 
