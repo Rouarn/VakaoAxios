@@ -1,5 +1,5 @@
 {
-  "name": "@vakao-ui/axios",
+  "name": "@vakao/axios",
   "version": "0.0.2",
   "description": "开箱即用的 axios 封装库：内置后端信封解包、401 单例刷新、去重取消、统一错误",
   "type": "module",

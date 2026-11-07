@@ -1,4 +1,4 @@
-# @vakao-ui/axios
+# @vakao/axios
 
 开箱即用、类型安全的 Axios 封装库（v1.0，不兼容 0.x）。内置后端信封解包、401 单例刷新并重放原请求、重复请求取消、全局 loading 计数与统一错误出口。
 
@@ -13,13 +13,13 @@
 ## 安装
 
 ```bash
-pnpm add @vakao-ui/axios axios
+pnpm add @vakao/axios axios
 ```
 
 ## 快速上手
 
 ```typescript
-import { createClient, RequestError } from "@vakao-ui/axios";
+import { createClient, RequestError } from "@vakao/axios";
 
 export const request = createClient({
   baseURL: "/api",
